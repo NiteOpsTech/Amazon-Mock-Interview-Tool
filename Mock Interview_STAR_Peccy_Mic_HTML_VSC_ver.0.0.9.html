@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Amazon Mock Interviewer Tool</title>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --accent: #ff9900; /* Amazon Orange / Yellow */
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --danger: #ef4444;
+      --success: #22c55e;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+      box-sizing: border-box;
+      position: relative;
+    }
+
+    .main-wrapper {
+      display: flex;
+      gap: 20px;
+      width: 100%;
+      max-width: 1150px;
+      align-items: flex-start;
+      margin-bottom: 40px; /* Space for fixed bottom footer */
+    }
+
+    .container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      min-width: 0;
+    }
+
+    /* Sidebar "Did You Know?" Panel */
+    .sidebar {
+      width: 280px;
+      background: var(--card-bg);
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      box-sizing: border-box;
+      position: sticky;
+      top: 20px;
+    }
+
+    .sidebar-header {
+      font-weight: bold;
+      font-size: 1.1rem;
+      color: var(--accent);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 8px;
+    }
+
+    .fact-card {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 0.92rem;
+      line-height: 1.5;
+      color: var(--text);
+      min-height: 140px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: opacity 0.3s ease;
+    }
+
+    .fact-tag {
+      font-size: 0.75rem;
+      color: var(--accent);
+      font-weight: bold;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .fact-progress {
+      height: 3px;
+      background: #334155;
+      border-radius: 2px;
+      margin-top: 10px;
+      overflow: hidden;
+    }
+
+    .fact-progress-bar {
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+      transition: width 0.1s linear;
+    }
+
+    /* Tabs */
+    .tab-bar {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      width: 100%;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      background: #334155;
+      color: var(--text-muted);
+      border: 1px solid #475569;
+      padding: 10px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: var(--accent);
+      color: #000;
+      border-color: var(--accent);
+    }
+
+    /* Stage Layout */
+    .interview-stage {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      border: 1px solid #334155;
+    }
+
+    .peccy-avatar-container {
+      width: 140px;
+      height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+      transition: transform 0.3s ease;
+    }
+
+    .peccy-avatar-container.speaking { animation: bounce 0.6s infinite alternate; }
+    .peccy-avatar-container.thinking { animation: pulse 1.2s infinite; }
+    .peccy-avatar-container.happy { transform: scale(1.1); }
+    .peccy-avatar-container.sad { transform: translateY(5px); }
+
+    @keyframes bounce { 0% { transform: translateY(0); } 100% { transform: translateY(-8px); } }
+    @keyframes pulse { 0% { opacity: 0.8; transform: scale(0.98); } 50% { opacity: 1; transform: scale(1.02); } 100% { opacity: 0.8; transform: scale(0.98); } }
+
+    /* Dialogue Box */
+    .dialogue-box {
+      background: #0f172a;
+      border-left: 4px solid var(--accent);
+      padding: 16px;
+      border-radius: 8px;
+      width: 100%;
+      box-sizing: border-box;
+      min-height: 80px;
+      font-size: 1.1rem;
+      line-height: 1.5;
+    }
+
+    .lp-tag {
+      display: inline-block;
+      background: rgba(255, 153, 0, 0.2);
+      color: var(--accent);
+      font-size: 0.8rem;
+      font-weight: bold;
+      padding: 4px 8px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    /* Controls & Timer */
+    .controls {
+      display: flex;
+      gap: 12px;
+      width: 100%;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .btn {
+      background: var(--accent);
+      color: #000;
+      font-weight: bold;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .btn:hover { background: #e68a00; }
+    .btn:disabled { background: #475569; color: #94a3b8; cursor: not-allowed; }
+
+    .btn-secondary { background: #475569; color: var(--text); }
+    .btn-secondary:hover { background: #64748b; }
+
+    .btn-danger { background: var(--danger); color: #ffffff; }
+    .btn-danger:hover { background: #dc2626; }
+
+    .timer {
+      font-size: 1.2rem;
+      font-family: monospace;
+      color: var(--text-muted);
+      background: #0f172a;
+      padding: 8px 14px;
+      border-radius: 6px;
+    }
+
+    /* MCQ Controls Bar */
+    .mc-filter-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card-bg);
+      border: 1px solid #334155;
+      padding: 12px 16px;
+      border-radius: 8px;
+    }
+
+    select {
+      background: #0f172a;
+      color: var(--text);
+      border: 1px solid #475569;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    /* Multiple Choice Area */
+    .mc-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .mc-option-btn {
+      background: var(--card-bg);
+      border: 1px solid #334155;
+      color: var(--text);
+      padding: 14px;
+      border-radius: 8px;
+      text-align: left;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: border 0.2s, background 0.2s;
+    }
+
+    .mc-option-btn:hover {
+      border-color: var(--accent);
+      background: #334155;
+    }
+
+    .mc-option-btn.correct {
+      background: rgba(34, 197, 94, 0.2);
+      border-color: var(--success);
+      color: #86efac;
+    }
+
+    .mc-option-btn.incorrect {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: var(--danger);
+      color: #fca5a5;
+    }
+
+    /* Audio Recorder Box */
+    .recorder-card {
+      background: var(--card-bg);
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .recorder-status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: bold;
+    }
+
+    .recording-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background-color: var(--text-muted);
+    }
+
+    .recording-dot.active {
+      background-color: var(--danger);
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+
+    audio { width: 100%; height: 40px; border-radius: 6px; }
+
+    /* Score Feedback Panel */
+    .score-panel {
+      display: none;
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+
+    .score-panel.green {
+      display: block;
+      background: rgba(34, 197, 94, 0.15);
+      border: 2px solid var(--success);
+      color: #86efac;
+    }
+
+    .score-panel.red {
+      display: block;
+      background: rgba(239, 68, 68, 0.15);
+      border: 2px solid var(--danger);
+      color: #fca5a5;
+    }
+
+    .score-header {
+      font-size: 1.3rem;
+      font-weight: bold;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Response Area */
+    .response-area {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 120px;
+      background: var(--card-bg);
+      border: 1px solid #334155;
+      border-radius: 8px;
+      color: var(--text);
+      padding: 12px;
+      font-size: 1rem;
+      box-sizing: border-box;
+      resize: vertical;
+    }
+
+    textarea:focus { outline: 2px solid var(--accent); }
+
+    /* STAR Badges */
+    .star-guide {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .star-badge {
+      background: #0f172a;
+      padding: 10px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      text-align: center;
+      border: 2px solid var(--danger); /* Initial State: Red */
+      color: #fca5a5;
+      transition: all 0.3s ease;
+    }
+
+    .star-badge strong { 
+      color: var(--danger); 
+      display: block; 
+      font-size: 0.85rem;
+      margin-bottom: 2px;
+      transition: color 0.3s ease;
+    }
+
+    .star-badge.pass {
+      border-color: var(--success);
+      color: #86efac;
+      background: rgba(34, 197, 94, 0.1);
+    }
+
+    .star-badge.pass strong {
+      color: var(--success);
+    }
+
+    /* Bottom Right Creator Credit */
+    .creator-credit {
+      position: fixed;
+      bottom: 12px;
+      right: 20px;
+      color: var(--accent);
+      font-weight: bold;
+      font-size: 0.9rem;
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    @media (max-width: 900px) {
+      .main-wrapper {
+        flex-direction: column;
+      }
+      .sidebar {
+        width: 100%;
+        position: static;
+      }
+      .creator-credit {
+        position: relative;
+        bottom: auto;
+        right: auto;
+        text-align: right;
+        width: 100%;
+        margin-top: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="main-wrapper">
+  <div class="container">
+    <h1 style="text-align: center; margin-bottom: 0;">Amazon Mock Interviewer Tool</h1>
+    <p style="text-align: center; color: var(--text-muted); margin-top: 4px;">Level Up, L3/L4 Engineer & Technical Fundamentals Prep</p>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tab-lp" onclick="switchMode('lp')">LP Behavioral Practice</button>
+      <button class="tab-btn" id="tab-mc" onclick="switchMode('mc')">Multiple Choice Tech Practice</button>
+      <button class="tab-btn" id="tab-questions" onclick="switchMode('questions')">Reverse Questions & Pitch</button>
+      <button class="tab-btn" id="tab-l4" onclick="switchMode('l4')">L4 Engineering Prep</button>
+    </div>
+
+    <div class="interview-stage">
+      <div id="peccy-avatar" class="peccy-avatar-container">
+        <svg id="peccy-svg" width="130" height="140" viewBox="0 0 130 140">
+          <path d="M 25,130 C 25,30 105,30 105,130 Z" fill="#FF9900" stroke="#CC7A00" stroke-width="2"/>
+          <path d="M 25,95 L 25,130 L 105,130 L 105,95 C 90,110 40,110 25,95 Z" fill="#1E293B"/>
+          <polygon points="65,95 55,120 75,120" fill="#FFFFFF"/>
+          <polygon points="65,97 60,125 70,125" fill="#DC2626"/>
+          <g id="peccy-eyes">
+            <circle cx="50" cy="55" r="10" fill="#FFFFFF"/>
+            <circle cx="50" cy="55" r="4" fill="#000000"/>
+            <circle cx="80" cy="55" r="10" fill="#FFFFFF"/>
+            <circle cx="80" cy="55" r="4" fill="#000000"/>
+          </g>
+          <path id="peccy-mouth" d="M 45,75 Q 65,90 85,75" fill="none" stroke="#000000" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+      </div>
+
+      <div style="font-weight: bold; margin-bottom: 8px;" id="sprite-name">Business Peccy (Interviewer)</div>
+
+      <div class="dialogue-box">
+        <div id="lp-tag" class="lp-tag">Customer Obsession</div>
+        <div id="dialogue">Hi there! I'm Business Peccy. Select a mode above or click "Next Prompt" to start practicing!</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn" id="next-btn" onclick="nextPrompt()">Next Prompt</button>
+      <div class="timer" id="timer">00:00</div>
+      <button class="btn btn-secondary" onclick="toggleTimer()" id="timer-btn">Start Timer</button>
+    </div>
+
+    <div id="mc-filter-bar" class="mc-filter-bar" style="display: none;">
+      <label for="mc-topic-select" style="font-weight: bold; font-size: 0.95rem;">Select Topic Bank:</label>
+      <select id="mc-topic-select" onchange="resetCategoryAndNextPrompt()">
+        <option value="all">All Topics (Mixed Technical & LP)</option>
+        <option value="linux">Linux Technical Fundamentals (25 Qs)</option>
+        <option value="windows">Windows Technical Fundamentals (25 Qs)</option>
+        <option value="ops">Site Security & Operations</option>
+      </select>
+    </div>
+
+    <div id="l4-filter-bar" class="mc-filter-bar" style="display: none;">
+      <label for="l4-topic-select" style="font-weight: bold; font-size: 0.95rem;">Select L4 Engineering Domain:</label>
+      <select id="l4-topic-select" onchange="resetCategoryAndNextPrompt()">
+        <option value="all">All L4 Engineering Domains</option>
+        <option value="l4-cloud">AWS Infrastructure & Hybrid Cloud</option>
+        <option value="l4-hardware">Server Hardware & Diagnostics</option>
+        <option value="l4-networking">Networking & Connectivity</option>
+        <option value="l4-behavioral">Behavioral & Leadership Principles</option>
+      </select>
+    </div>
+
+    <div id="mc-area" class="mc-container" style="display: none;"></div>
+
+    <div class="recorder-card" id="recorder-card">
+      <div class="recorder-status">
+        <div id="record-dot" class="recording-dot"></div>
+        <span id="record-status-text">Microphone Ready</span>
+      </div>
+      
+      <div style="display: flex; gap: 10px;">
+        <button class="btn" id="record-btn" onclick="toggleRecording()">🎙️ Record Answer</button>
+      </div>
+
+      <audio id="audio-playback" controls style="display: none;"></audio>
+    </div>
+
+    <div id="score-panel" class="score-panel">
+      <div id="score-header" class="score-header"></div>
+      <div id="score-body"></div>
+    </div>
+
+    <div class="response-area" id="notes-area">
+      <label for="user-notes" id="input-label" style="font-weight: bold;">Your Answer / Transcript for Evaluation:</label>
+      <textarea id="user-notes" oninput="checkStarRealtime()" placeholder="Type or paste your STAR response here to get scored...&#10;• Situation/Task: Set up the issue...&#10;• Action: What YOU did specifically...&#10;• Result: Quantitative metrics & outcome..."></textarea>
+
+      <div style="display: flex; justify-content: space-between;">
+        <button class="btn btn-secondary" onclick="evaluateAnswer()">Score My Answer</button>
+        <button class="btn btn-secondary" onclick="resetNotes()">Clear</button>
+      </div>
+    </div>
+
+    <div class="star-guide" id="star-guide">
+      <div class="star-badge" id="badge-s">
+        <strong id="title-s">S - Situation</strong>
+        <span>Context & issue (15%)</span>
+      </div>
+      <div class="star-badge" id="badge-t">
+        <strong id="title-t">T - Task</strong>
+        <span>Your responsibility (15%)</span>
+      </div>
+      <div class="star-badge" id="badge-a">
+        <strong id="title-a">A - Action</strong>
+        <span>Actions YOU took (50%)</span>
+      </div>
+      <div class="star-badge" id="badge-r">
+        <strong id="title-r">R - Result</strong>
+        <span>Measurable metrics (20%)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="sidebar-header">
+      💡 Did You Know?
+    </div>
+    <div class="fact-card" id="fact-card">
+      <div class="fact-tag" id="fact-tag">Tech & LP Insights</div>
+      <div id="fact-text" style="flex: 1;">Loading quick technical facts...</div>
+      <div class="fact-progress">
+        <div class="fact-progress-bar" id="fact-progress-bar"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="creator-credit">
+  Developer-Alex Ugalde/Ugaldale/NiteOpsTech-Github
+</div>
+
+<script>
+  let currentMode = 'lp';
+  let canAdvance = true;
+  let currentMC = null;
+  let lastPromptIndex = -1;
+
+  // Web Speech Recognition setup for live audio speech-to-text
+  let recognition = null;
+  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onresult = (event) => {
+      let transcript = '';
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript + ' ';
+      }
+      document.getElementById('user-notes').value = transcript;
+      checkStarRealtime();
+    };
+  }
+
+  // Did You Know facts array
+  const factsList = [
+    { tag: "Cloud Architecture", text: "AWS Outposts brings native AWS services, infrastructure, and operating models directly to virtually any data center or on-premises facility." },
+    { tag: "Server Diagnostics", text: "POST (Power-On Self-Test) tests system hardware components like CPU, Memory, Storage, and Mainboard before initializing boot devices." },
+    { tag: "Server Hardware", text: "IPMI operates independently of the host OS via a BMC chip, allowing out-of-band management even when the OS is unresponsive." },
+    { tag: "Storage Tech", text: "SSDs use non-volatile NAND flash memory with zero moving parts, giving them significantly lower latencies than mechanical HDDs." },
+    { tag: "Networking", text: "Layer 1 troubleshooting covers physical media like cables and optics, while Layer 2 addresses Data Link layers including MAC addresses and VLAN tagging." },
+    { tag: "Linux Commands", text: "The 'top' utility displays real-time system resource utilization, whereas 'df -h' displays free storage capacity across mounted filesystems." },
+    { tag: "Windows Admin", text: "System File Checker ('sfc /scannow') scans integrity of all protected system files and repairs damaged copies automatically." },
+    { tag: "Leadership Principles", text: "Bias for Action favors calculated risk-taking because many operational decisions are reversible and speed matters." },
+    { tag: "Fiber Optics", text: "LC connectors are small form-factor fiber connectors widely used in data center SFP/SFP+ transceiver modules." },
+    { tag: "Server Diagnostics", text: "When DIMMs are missing, checking CPU socket pin alignment and reseating individual DIMM pairs in designated slots are standard troubleshooting steps." }
+  ];
+
+  let currentFactIdx = 0;
+  let factProgressTimer = null;
+  let factProgressVal = 0;
+
+  function startFactFeed() {
+    displayFact();
+    if (factProgressTimer) clearInterval(factProgressTimer);
+    
+    factProgressVal = 0;
+    factProgressTimer = setInterval(() => {
+      factProgressVal += (100 / 150); // 15 seconds = 150 * 100ms
+      document.getElementById('fact-progress-bar').style.width = Math.min(factProgressVal, 100) + '%';
+      
+      if (factProgressVal >= 100) {
+        factProgressVal = 0;
+        currentFactIdx = (currentFactIdx + 1) % factsList.length;
+        displayFact();
+      }
+    }, 100);
+  }
+
+  function displayFact() {
+    const card = document.getElementById('fact-card');
+    card.style.opacity = '0';
+    setTimeout(() => {
+      const f = factsList[currentFactIdx];
+      document.getElementById('fact-tag').innerText = f.tag;
+      document.getElementById('fact-text').innerText = f.text;
+      card.style.opacity = '1';
+    }, 200);
+  }
+
+  // Standard 80 Question Pool (18 LP + 25 Linux + 25 Windows + 2 Ops + 5 Reverse + 15 L4)
+  const lpQuestions = [
+    { lp: "Customer Obsession", text: "Tell me about a time when you went above and beyond to solve an operational or safety bottleneck for your team or customer." },
+    { lp: "Ownership", text: "Tell me about a time you noticed an issue outside your daily area of responsibility and took direct ownership to fix it." },
+    { lp: "Bias for Action", text: "Tell me about a time you had to make a critical, time-sensitive decision on the floor without complete information or supervisor guidance." },
+    { lp: "Invent and Simplify", text: "Tell me about a time you identified a repetitive task or workflow inefficiency and created a simpler method or tool to improve it." },
+    { lp: "Earn Trust", text: "Tell me about a time you made a mistake at work. How did you handle it, and how did you communicate it to your team or manager?" },
+    { lp: "Deliver Results", text: "Tell me about a time you faced hardware, operational, or timing roadblocks and still delivered your project or task on schedule." },
+    { lp: "Insist on the Highest Standards", text: "Tell me about a time you refused to compromise on quality or safety protocols, even when pressured to move quickly." },
+    { lp: "Dive Deep", text: "Tell me about a complex problem where you had to drill down into logs, data, or physical equipment details to discover the root cause." },
+    { lp: "Are Right, A Lot", text: "Tell me about a time when you relied on data and intuition to make a decision when team opinions were divided." },
+    { lp: "Hire and Develop the Best", text: "Tell me about a time you mentored a team member or helped onboard a colleague to improve team performance." },
+    { lp: "Learn and Be Curious", text: "Tell me about a time you realized you lacked essential technical knowledge for a task. How did you get up to speed?" },
+    { lp: "Frugality", text: "Tell me about a time you accomplished an operational goal with limited resources or budget." },
+    { lp: "Have Backbone; Disagree and Commit", text: "Tell me about a time you disagreed with a colleague or manager on a technical solution. How did you present your case?" },
+    { lp: "Strive to be Earth's Best Employer", text: "Tell me about a time you took action to foster safety, inclusion, or positive working conditions in your facility." },
+    { lp: "Success and Scale Bring Broad Responsibility", text: "Tell me about a time you designed or improved a process keeping long-term scalability and impact in mind." },
+    { lp: "Customer Obsession", text: "Describe a situation where you had to balance competing customer demands while maintaining strict compliance standards." },
+    { lp: "Ownership", text: "Tell me about a project that was falling behind schedule and what steps you took to turn it around." },
+    { lp: "Dive Deep", text: "Tell me about an instance where an initial diagnostic was incorrect, and how you discovered the real underlying issue." }
+  ];
+
+  const mcQuestions = [
+    // SITE OPERATIONS & SECURITY PROTOCOLS (2 QUESTIONS)
+    {
+      group: "ops",
+      category: "Ownership & Security Protocols",
+      text: "While walking your site floor, you notice an unbadged visitor standing in a restricted operational area without a visible escort. What is the correct initial action under strict site protocols?",
+      options: [
+        "Assume security handled them at the main entrance and keep walking.",
+        "Politely challenge the individual, verify their escort/badge status, and report to security immediately if unescorted.",
+        "Wait until your shift ends to flag the event in your daily handoff ticket.",
+        "Ask a co-worker to keep an eye on them while you finish your current priority task."
+      ],
+      correctText: "Politely challenge the individual, verify their escort/badge status, and report to security immediately if unescorted.",
+      explanation: "Amazon technicians practice strict Ownership and Earn Trust. Security and safety protocol breaches require immediate vocal verification and escalation."
+    },
+    {
+      group: "ops",
+      category: "Operations & Troubleshooting",
+      text: "When responding to a critical hardware failure, what is the best first step according to Bias for Action and Insist on the Highest Standards?",
+      options: [
+        "Immediately swap out components without reviewing ticket documentation or system logs.",
+        "Escalate to senior engineering immediately before performing basic physical diagnostics.",
+        "Verify the equipment ID, review active diagnostics, follow safety guidelines (ESD/LOTO), and execute standard troubleshooting procedures.",
+        "Power down the entire subsystem to prevent further electrical or mechanical damage."
+      ],
+      correctText: "Verify the equipment ID, review active diagnostics, follow safety guidelines (ESD/LOTO), and execute standard troubleshooting procedures.",
+      explanation: "Strict standard operating procedures ensure maximum availability while preventing physical hazards or unintended downtime."
+    },
+
+    // LINUX FUNDAMENTALS (25 QUESTIONS)
+    { group: "linux", category: "Linux Directory Navigation", text: "Which command prints the absolute path of the directory you are currently working in inside a Linux terminal?", options: ["dir", "pwd", "cd --where", "path"], correctText: "pwd", explanation: "'pwd' stands for 'Print Working Directory' and displays the full absolute file path." },
+    { group: "linux", category: "Linux File Permissions", text: "What numeric permission code represents read, write, and execute permissions for the owner, and read/execute permissions for group and others?", options: ["644", "755", "777", "700"], correctText: "755", explanation: "755 breaks down to: Owner = 7 (Read 4 + Write 2 + Execute 1), Group = 5 (4+1), Others = 5 (4+1)." },
+    { group: "linux", category: "Linux Process Management", text: "Which Linux command displays active system processes and real-time resource utilization (CPU and Memory)?", options: ["top", "ps-aux", "taskmgr", "systemctl show"], correctText: "top", explanation: "'top' provides a dynamic real-time view of running processes and system resources." },
+    { group: "linux", category: "Linux Network Diagnostics", text: "Which command in modern Linux systems is commonly used to inspect network interface IP addresses and link statuses?", options: ["ip addr", "ifconfig /all", "netstat -ip", "ping -list"], correctText: "ip addr", explanation: "'ip addr' (or 'ip a') is the standard iproute2 command used to check network interface configurations." },
+    { group: "linux", category: "Linux File Search", text: "How do you search for lines containing the string 'ERROR' inside a system log file named /var/log/syslog?", options: ["find 'ERROR' in /var/log/syslog", "grep 'ERROR' /var/log/syslog", "cat /var/log/syslog | search 'ERROR'", "filter -s 'ERROR' /var/log/syslog"], correctText: "grep 'ERROR' /var/log/syslog", explanation: "'grep' (Global Regular Expression Print) searches for plain text patterns inside files." },
+    { group: "linux", category: "Linux Root Privilege", text: "Which command allows an authorized technician to execute a command with administrative or root privileges?", options: ["admin", "sudo", "su --run", "elevate"], correctText: "sudo", explanation: "'sudo' stands for 'Superuser Do' and elevates privileges for individual command execution." },
+    { group: "linux", category: "Linux File Creation", text: "Which command creates an empty file if it doesn't exist, or updates its timestamp if it does exist?", options: ["newfile", "make", "touch", "create"], correctText: "touch", explanation: "'touch' creates a new empty file or updates access/modification timestamps on existing files." },
+    { group: "linux", category: "Linux System Systemd Services", text: "What command is used to restart an SSH daemon service managed by systemd on Linux?", options: ["service ssh restart", "systemctl restart sshd", "init 6 --ssh", "restart-service ssh"], correctText: "systemctl restart sshd", explanation: "'systemctl' is the primary command-line tool used to control systemd services." },
+    { group: "linux", category: "Linux Storage & Disk Space", text: "Which command checks disk usage across all mounted file systems in human-readable format (MB/GB)?", options: ["df -h", "du -all", "diskpart /show", "lsblk -size"], correctText: "df -h", explanation: "'df -h' displays free/used disk space in human-readable form (gigabytes, megabytes)." },
+    { group: "linux", category: "Linux Storage Directories", text: "In the standard Linux Directory Hierarchy (FHS), where are system configuration files primarily stored?", options: ["/bin", "/var", "/etc", "/usr"], correctText: "/etc", explanation: "The '/etc' directory houses host-specific system-wide configuration files and scripts." },
+    { group: "linux", category: "Linux Log Inspection", text: "Which command lets you view system logs in real-time as new lines are appended to the file?", options: ["cat /var/log/syslog", "tail -f /var/log/syslog", "head -100 /var/log/syslog", "read /var/log/syslog"], correctText: "tail -f /var/log/syslog", explanation: "'tail -f' outputs appended data as the file grows in real time." },
+    { group: "linux", category: "Linux File Removal", text: "What command forcefully and recursively deletes a directory along with all of its contents?", options: ["rmdir -all directory", "rm -rf directory", "del /s directory", "erase -f directory"], correctText: "rm -rf directory", explanation: "'rm -rf' forcefully (-f) and recursively (-r) removes directories and files." },
+    { group: "linux", category: "Linux Remote Access", text: "Which protocol and command line utility is standard for establishing a secure, encrypted remote shell connection to a Linux server?", options: ["Telnet", "SSH", "RDP", "FTP"], correctText: "SSH", explanation: "SSH (Secure Shell) provides encrypted command-line remote access across TCP port 22." },
+    { group: "linux", category: "Linux Package Management", text: "In Debian/Ubuntu-based distributions, which command updates the local package repository index?", options: ["apt update", "yum upgrade", "rpm -i update", "pacman -Syu"], correctText: "apt update", explanation: "'apt update' downloads package information from configured repositories to ensure package lists are current." },
+    { group: "linux", category: "Linux Virtual Machines & Hypervisors", text: "In Linux KVM/QEMU virtualization environments, which CLI tool is used to manage and list virtual guest machines?", options: ["virsh", "vboxmanage", "hyperv-ctl", "docker-ps"], correctText: "virsh", explanation: "'virsh' is the management shell for libvirt/KVM virtualized domains." },
+    { group: "linux", category: "Linux File Ownership", text: "Which command changes the owner user and group of a file named server.conf?", options: ["chmod", "chown", "chgrp-only", "setuser"], correctText: "chown", explanation: "'chown' (Change Owner) changes file or directory user/group ownership." },
+    { group: "linux", category: "Linux System Reboot", text: "Which command safely shuts down and reboots a Linux machine immediately?", options: ["reboot", "shutdown -h now", "init 0", "halt -f"], correctText: "reboot", explanation: "'reboot' (or 'shutdown -r now') initiates a safe restart of the operating system." },
+    { group: "linux", category: "Linux Symbolic Links", text: "How do you create a symbolic shortcut link named /bin/link pointing to /opt/app/start.sh?", options: ["ln -s /opt/app/start.sh /bin/link", "shortcut /opt/app/start.sh /bin/link", "mklink /bin/link /opt/app/start.sh", "link --sym /opt/app/start.sh"], correctText: "ln -s /opt/app/start.sh /bin/link", explanation: "'ln -s target link_name' creates a soft symbolic link pointing to the target." },
+    { group: "linux", category: "Linux Environment Variables", text: "Which command displays the current values of all active environment variables in a Linux terminal session?", options: ["env", "echo %ALL%", "varlist", "show-env"], correctText: "env", explanation: "'env' (or 'printenv') prints all exported environment variables in the active shell." },
+    { group: "linux", category: "Linux Piping and Redirects", text: "What symbol is used to redirect standard command output into a file, overwriting its existing contents?", options: [">", ">>", "|", "<"], correctText: ">", explanation: "A single '>' overwrites the file with command output. Double '>>' appends to the file." },
+    { group: "linux", category: "Linux Storage Drives", text: "Which command lists block devices (hard drives, SSDs, partitions) attached to a Linux system?", options: ["lsblk", "fdisk -show", "mount --list", "show-drives"], correctText: "lsblk", explanation: "'lsblk' lists information about all available or specified block storage devices." },
+    { group: "linux", category: "Linux Hostname Configuration", text: "What command displays or updates the system's network hostname?", options: ["hostnamectl", "sethost", "netname", "domainname -set"], correctText: "hostnamectl", explanation: "'hostnamectl' is used to query and change the system hostname and related settings." },
+    { group: "linux", category: "Linux Process Signals", text: "Which kill signal sends an uncatchable, immediate termination signal (SIGKILL) to a process ID?", options: ["kill -9 PID", "kill -15 PID", "kill -1 PID", "kill -SIGTERM PID"], correctText: "kill -9 PID", explanation: "Signal 9 (SIGKILL) forces the kernel to terminate a hung process immediately." },
+    { group: "linux", category: "Linux Text File Viewing", text: "Which command displays the first 10 lines of a text file?", options: ["head -n 10 file.txt", "tail -10 file.txt", "cat -top 10 file.txt", "show -first 10 file.txt"], correctText: "head -n 10 file.txt", explanation: "'head' outputs the beginning portion of files (defaults to 10 lines)." },
+    { group: "linux", category: "Linux Network Listening Ports", text: "Which utility shows active TCP and UDP listening sockets and their associated process IDs?", options: ["ss -tulpn", "ping -a", "route -n", "traceroute -p"], correctText: "ss -tulpn", explanation: "'ss' (socket statistics) with '-tulpn' shows listening TCP/UDP sockets with process names and IDs." },
+
+    // WINDOWS FUNDAMENTALS (25 QUESTIONS)
+    { group: "windows", category: "Windows Network Config", text: "Which Command Prompt command displays full network configuration details, including IP address, subnet mask, DNS servers, and MAC address?", options: ["ipconfig /all", "netstat -a", "nslookup /details", "route print"], correctText: "ipconfig /all", explanation: "'ipconfig /all' displays complete TCP/IP configuration details for all network adapters." },
+    { group: "windows", category: "Windows PowerShell Cmdlets", text: "In PowerShell, which standard cmdlet is used to test network connectivity to a specific host IP or port?", options: ["Test-NetConnection", "Ping-Host", "Check-Connection", "Get-NetworkStatus"], correctText: "Test-NetConnection", explanation: "'Test-NetConnection' (TNC) tests ICMP ping or TCP port connectivity to remote hosts." },
+    { group: "windows", category: "Windows System File Repair", text: "Which command line utility scans system files and replaces corrupted or missing Windows operating system files?", options: ["sfc /scannow", "chkdsk /f", "diskpart /clean", "defrag /all"], correctText: "sfc /scannow", explanation: "System File Checker ('sfc /scannow') verifies integrity and repairs protected system files." },
+    { group: "windows", category: "Windows Remote Desktop", text: "What executable command opens the Windows Remote Desktop Connection GUI tool directly from Run or CLI?", options: ["mstsc", "rdp", "winrm", "remote-desktop"], correctText: "mstsc", explanation: "'mstsc' (Microsoft Terminal Services Client) launches Remote Desktop Connection." },
+    { group: "windows", category: "Windows Directory Listing", text: "What command displays files and subdirectories in the current directory within CMD?", options: ["dir", "ls --win", "folder-list", "show-files"], correctText: "dir", explanation: "'dir' lists files and subdirectories inside Windows Command Prompt." },
+    { group: "windows", category: "Windows Service Management", text: "In PowerShell, how do you start a stopped service named 'W32Time'?", options: ["Start-Service -Name W32Time", "net-start W32Time", "Enable-Service W32Time", "run-service W32Time"], correctText: "Start-Service -Name W32Time", explanation: "'Start-Service' is the native PowerShell cmdlet for starting local system services." },
+    { group: "windows", category: "Windows Virtualization", text: "What built-in Microsoft hypervisor technology enables creation and management of virtual machines on Windows Server and Enterprise?", options: ["Hyper-V", "KVM", "VirtualBox", "ESXi Native"], correctText: "Hyper-V", explanation: "Hyper-V is Microsoft's native hardware virtualization hypervisor." },
+    { group: "windows", category: "Windows Event Logs", text: "Which administrative GUI snap-in utility is used to inspect Windows System, Application, and Security error logs?", options: ["Event Viewer (eventvwr.msc)", "Task Manager", "Device Manager", "Performance Monitor"], correctText: "Event Viewer (eventvwr.msc)", explanation: "Event Viewer provides detailed system, security, application, and diagnostic logs." },
+    { group: "windows", category: "Windows Disk Management", text: "Which command line tool is used to partition, format, extend, or wipe storage drives in Windows?", options: ["diskpart", "fdisk", "format-cli", "parted"], correctText: "diskpart", explanation: "'diskpart' is the built-in Windows text-mode disk management command utility." },
+    { group: "windows", category: "Windows DNS Diagnostics", text: "Which CLI command queries Domain Name System (DNS) servers to resolve a hostname to an IP address?", options: ["nslookup", "ipconfig /resolve", "netsh dns", "ping -dns"], correctText: "nslookup", explanation: "'nslookup' queries DNS name servers to resolve IP addresses or diagnostic host records." },
+    { group: "windows", category: "Windows Task Manager", text: "Which CLI command allows technicians to forcibly terminate a running process by its PID?", options: ["taskkill /PID <number> /F", "kill-process <number>", "stop-app <number>", "endtask /f <number>"], correctText: "taskkill /PID <number> /F", explanation: "'taskkill /PID <number> /F' forcefully stops a running process in CMD." },
+    { group: "windows", category: "Windows File Copying", text: "Which robust command line file copy tool supports multi-threading, mirroring, and resuming interrupted file transfers?", options: ["robocopy", "xcopy", "copy /v", "move-file"], correctText: "robocopy", explanation: "'robocopy' (Robust File Copy) is a high-performance Windows file transfer utility." },
+    { group: "windows", category: "Windows Group Policy", text: "Which command forces an immediate update of local and Active Directory Group Policies on a computer?", options: ["gpupdate /force", "gpo-refresh", "netsh gpo update", "policync"], correctText: "gpupdate /force", explanation: "'gpupdate /force' re-applies all local and domain Group Policy settings immediately." },
+    { group: "windows", category: "Windows Network Shell", text: "Which powerful Windows command line tool manages network interface configurations, firewall rules, and wireless settings?", options: ["netsh", "netconfig", "ipconfig /set", "win-net"], correctText: "netsh", explanation: "'netsh' (Network Shell) provides extensive network interface and firewall command options." },
+    { group: "windows", category: "Windows Environment Variables", text: "How do you echo the current user profile path in CMD?", options: ["echo %USERPROFILE%", "echo $USERPROFILE", "print %USER%", "get-userpath"], correctText: "echo %USERPROFILE%", explanation: "Windows Command Prompt encloses environment variables in percent signs (%VAR%)." },
+    { group: "windows", category: "Windows Active Directory CLI", text: "In PowerShell Active Directory module, which cmdlet gets information about a specific user account?", options: ["Get-ADUser", "Find-User", "Query-ADAccount", "Get-DomainUser"], correctText: "Get-ADUser", explanation: "'Get-ADUser' retrieves Active Directory user objects and attributes." },
+    { group: "windows", category: "Windows Management Instrumentation", text: "What technology and PowerShell suite (WMI/CIM) queries hardware info like system BIOS, serial numbers, and drive status?", options: ["Get-CimInstance", "Get-HardwareInfo", "Query-System", "Get-DeviceData"], correctText: "Get-CimInstance", explanation: "'Get-CimInstance' queries Common Information Model (CIM) and WMI hardware classes." },
+    { group: "windows", category: "Windows Routing Table", text: "Which command prints the active network routing table on a Windows host?", options: ["route print", "ipconfig /route", "netstat -r-only", "show-routes"], correctText: "route print", explanation: "'route print' (or 'netstat -r') displays host network gateway routing paths." },
+    { group: "windows", category: "Windows Registry", text: "What tool/GUI is used to edit the hierarchical Windows Configuration Registry database?", options: ["regedit.exe", "sysedit.exe", "configmgr.msc", "winreg.exe"], correctText: "regedit.exe", explanation: "'regedit' launches the Windows Registry Editor." },
+    { group: "windows", category: "Windows File System", text: "What default file system is used on modern Windows Server systems for security ACLs and large volumes?", options: ["NTFS", "FAT32", "ext4", "exFAT"], correctText: "NTFS", explanation: "NTFS (New Technology File System) provides file-level security ACLs, compression, and logging." },
+    { group: "windows", category: "Windows Shared Folders", text: "Which command lists shared resources and administrative shares (e.g., C$) on a local computer?", options: ["net share", "show-smb", "ipconfig /shares", "dir /shared"], correctText: "net share", explanation: "'net share' displays shared folders and printer resources." },
+    { group: "windows", category: "Windows Computer Management", text: "Which Management Console snap-in shortcut combines Device Manager, Disk Management, and Local Users & Groups?", options: ["compmgmt.msc", "sysadmin.msc", "devmgmt.msc", "winmgmt.msc"], correctText: "compmgmt.msc", explanation: "'compmgmt.msc' launches the administrative Computer Management tool." },
+    { group: "windows", category: "Windows PowerShell Pipe", text: "How do you filter objects in PowerShell based on a specific property value?", options: ["Where-Object", "Filter-Item", "Select-Match", "Match-Property"], correctText: "Where-Object", explanation: "'Where-Object' filters pipeline input objects based on script blocks or conditions." },
+    { group: "windows", category: "Windows Disk Check", text: "Which command scans and fixes file system errors on hard drive partition C: during startup?", options: ["chkdsk C: /f", "sfc /fix C:", "diskpart /repair", "check-volume C:"], correctText: "chkdsk C: /f", explanation: "'chkdsk C: /f' fixes volume disk errors." },
+    { group: "windows", category: "Windows System Information", text: "Which command provides a detailed summary of system hardware, OS build, processor specs, and installed updates?", options: ["systeminfo", "winver /all", "sysconfig", "get-hostinfo"], correctText: "systeminfo", explanation: "'systeminfo' displays detailed operating system and physical hardware configuration data." }
+  ];
+
+  const reverseQuestions = [
+    { lp: "Questions To Ask - Team Infrastructure", text: "Every site environment faces unique operational challenges. For this facility, what is the biggest technical or operational hurdle the L3 team is working to solve right now?" },
+    { lp: "Questions To Ask - Safety & Change Control", text: "In a fast-paced environment, how does leadership balance fast execution and maintenance with strict site safety, ESD/LOTO, and change-management compliance?" },
+    { lp: "Questions To Ask - Success Metrics", text: "If I step into this L3 role and we look back six months from now, what specific operational goals or benchmarks would I have met for you to consider my transition a massive success?" },
+    { lp: "Questions To Ask - Leadership Support", text: "I believe in transparency, accountability, and keeping a cool head under pressure. How does the leadership team support technicians when navigating high-priority SEVs or sudden equipment failures?" },
+    { lp: "Closing Elevator Pitch", text: "[Interviewer Name], thank you for your time today. Based on everything we've discussed, I know I have the operational grit, technical curiosity, and disciplined mindset to excel in an L3 capacity. I want to build a rock-solid foundation, support my teammates, and deliver high operational standards for our site. I'm ready to get to work." }
+  ];
+
+  // 15 NEW L4 Questions sourced directly from PDF: "So you want to be an L4 Engineer?"
+  const l4Questions = [
+    // AWS Infrastructure & Hybrid Cloud
+    {
+      group: "l4-cloud",
+      category: "AWS Cloud Architecture",
+      text: "What is AWS Outposts, how does it extend AWS infrastructure on-premises, and what are key hardware/networking operational considerations?",
+      guidance: "Focus on rack delivery, physical space, power/cooling requirements, AWS-managed server hardware, and local gateway (LGW) connectivity."
+    },
+    // Server Hardware & Diagnostics
+    {
+      group: "l4-hardware",
+      category: "Hardware Diagnostics Q1",
+      text: "What is BIOS, and what does it do?",
+      guidance: "Explain Basic Input/Output System, initializing hardware components during boot, and bridging OS software with hardware."
+    },
+    {
+      group: "l4-hardware",
+      category: "Hardware Diagnostics Q2",
+      text: "What is POST? What 4 hardware components are necessary for POST? What does each component do?",
+      guidance: "Define Power-On Self-Test. Detail CPU, Memory (RAM), Power Supply (PSU), and Motherboard/BIOS."
+    },
+    {
+      group: "l4-hardware",
+      category: "Hardware Diagnostics Q3",
+      text: "Can you define HDD and SSD and describe the key differences between them?",
+      guidance: "Compare spinning magnetic platters vs NAND flash memory, IOPS performance, latency, and failure modes."
+    },
+    {
+      group: "l4-hardware",
+      category: "Hardware Diagnostics Q4",
+      text: "What is IPMI?",
+      guidance: "Explain Intelligent Platform Management Interface, out-of-band management via BMC, sensors, and remote power cycling."
+    },
+    {
+      group: "l4-hardware",
+      category: "Hardware Diagnostics Q5",
+      text: "Please give me a step-by-step walkthrough of what you do when you replace a CPU.",
+      guidance: "Cover safety/ESD grounding, socket latch opening, pin inspection, thermal paste application, and heatsink torquing."
+    },
+    {
+      group: "l4-hardware",
+      category: "Hardware Diagnostics Q6",
+      text: "A server has 2 CPUs and 12 DIMMs. 6 out of 12 DIMMs are not being seen by the system. How would you troubleshoot the issue?",
+      guidance: "Walk through CPU socket memory channels, channel mapping, swapping DIMMs to isolate dead sticks vs socket/CPU memory controller failure."
+    },
+    // Networking & Connectivity
+    {
+      group: "l4-networking",
+      category: "Networking Q1",
+      text: "You are working on a computer (server) that isn't able to establish a network connection. What would you do to troubleshoot the problem?",
+      guidance: "Detail bottom-up OSI troubleshooting: physical link lights, cable swapping, ip addr/ipconfig, gateway ping, DNS resolution."
+    },
+    {
+      group: "l4-networking",
+      category: "Networking Q2",
+      text: "How would you approach Layer 1 and Layer 2 network troubleshooting?",
+      guidance: "Cover cabling/fiber transceivers/SFP clean check (L1) vs MAC address tables, ARP, VLAN tagging, and switch port status (L2)."
+    },
+    {
+      group: "l4-networking",
+      category: "Networking Q3",
+      text: "What are the different fiber connectors?",
+      guidance: "Detail LC, SC, ST, and MPO/MTP multi-fiber connectors used in modern data center environments."
+    },
+    {
+      group: "l4-networking",
+      category: "Networking Q4",
+      text: "What are the different fiber transceivers?",
+      guidance: "Compare SFP (1Gbps), SFP+ (10Gbps), QSFP+ (40Gbps), QSFP28 (100Gbps), single-mode (SMF) vs multi-mode (MMF)."
+    },
+    // Behavioral & Leadership Principles
+    {
+      group: "l4-behavioral",
+      category: "Bias for Action / Are Right, A Lot",
+      text: "Tell me about a time you had to make a decision with incomplete data.",
+      guidance: "Structure using STAR method. Emphasize risk mitigation, high-velocity decision making, and metrics monitoring."
+    },
+    {
+      group: "l4-behavioral",
+      category: "Have Backbone; Disagree and Commit",
+      text: "Tell me about a time you disagreed with a decision or had to challenge a superior.",
+      guidance: "Highlight respectful pushback with technical data, followed by 100% commitment once decision was finalized."
+    },
+    {
+      group: "l4-behavioral",
+      category: "Ownership / Learn and Be Curious",
+      text: "Tell me about a time when you failed or made a mistake. What did you learn?",
+      guidance: "Own the mistake without blaming others, explain immediate remediation, and detail preventative standard operating updates."
+    },
+    {
+      group: "l4-behavioral",
+      category: "Insist on Highest Standards / Dive Deep",
+      text: "Tell me about a time you raised the bar, improved a process, or had to dive deep to solve a root cause issue.",
+      guidance: "Detail audit steps, root cause discovery (5 Whys), implementation of continuous improvement, and scalable results."
+    }
+  ];
+
+  const avatar = document.getElementById('peccy-avatar');
+  const mouth = document.getElementById('peccy-mouth');
+  const dialogue = document.getElementById('dialogue');
+  const lpTag = document.getElementById('lp-tag');
+  const nextBtn = document.getElementById('next-btn');
+
+  let timerInterval = null;
+  let seconds = 0;
+  let isTimerRunning = false;
+
+  let mediaRecorder = null;
+  let audioChunks = [];
+  let isRecording = false;
+
+  async function toggleRecording() {
+    const recordBtn = document.getElementById('record-btn');
+    const statusText = document.getElementById('record-status-text');
+    const recordDot = document.getElementById('record-dot');
+    const audioPlayer = document.getElementById('audio-playback');
+
+    if (!isRecording) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) audioChunks.push(event.data);
+        };
+
+        mediaRecorder.onstop = () => {
+          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+          audioPlayer.src = URL.createObjectURL(audioBlob);
+          audioPlayer.style.display = 'block';
+        };
+
+        mediaRecorder.start();
+        if (recognition) recognition.start();
+
+        isRecording = true;
+        recordBtn.innerText = "🛑 Stop Recording";
+        recordBtn.className = "btn btn-danger";
+        statusText.innerText = "Recording & Transcribing Audio...";
+        recordDot.classList.add('active');
+        setPeccyState('happy');
+        if (!isTimerRunning) toggleTimer();
+      } catch (err) {
+        alert("Microphone access denied or not supported in this browser.");
+      }
+    } else {
+      mediaRecorder.stop();
+      if (recognition) recognition.stop();
+      mediaRecorder.stream.getTracks().forEach(track => track.stop());
+      isRecording = false;
+      recordBtn.innerText = "🎙️ Record Again";
+      recordBtn.className = "btn";
+      statusText.innerText = "Recording Saved & Transcribed!";
+      recordDot.classList.remove('active');
+      setPeccyState('speaking');
+      if (isTimerRunning) toggleTimer();
+    }
+  }
+
+  function resetCategoryAndNextPrompt() {
+    lastPromptIndex = -1;
+    nextPrompt();
+  }
+
+  function switchMode(mode) {
+    currentMode = mode;
+    document.getElementById('tab-lp').className = mode === 'lp' ? 'tab-btn active' : 'tab-btn';
+    document.getElementById('tab-mc').className = mode === 'mc' ? 'tab-btn active' : 'tab-btn';
+    document.getElementById('tab-questions').className = mode === 'questions' ? 'tab-btn active' : 'tab-btn';
+    document.getElementById('tab-l4').className = mode === 'l4' ? 'tab-btn active' : 'tab-btn';
+
+    const mcFilterBar = document.getElementById('mc-filter-bar');
+    const l4FilterBar = document.getElementById('l4-filter-bar');
+    const mcArea = document.getElementById('mc-area');
+    const notesArea = document.getElementById('notes-area');
+    const recorderCard = document.getElementById('recorder-card');
+    const starGuide = document.getElementById('star-guide');
+
+    if (mode === 'mc') {
+      mcFilterBar.style.display = 'flex';
+      l4FilterBar.style.display = 'none';
+      mcArea.style.display = 'flex';
+      notesArea.style.display = 'none';
+      recorderCard.style.display = 'none';
+      starGuide.style.display = 'none';
+    } else if (mode === 'l4') {
+      mcFilterBar.style.display = 'none';
+      l4FilterBar.style.display = 'flex';
+      mcArea.style.display = 'none';
+      notesArea.style.display = 'flex';
+      recorderCard.style.display = 'flex';
+      starGuide.style.display = 'grid';
+      document.getElementById('input-label').innerText = "Your L4 Engineering Technical / Behavioral Response:";
+    } else {
+      mcFilterBar.style.display = 'none';
+      l4FilterBar.style.display = 'none';
+      mcArea.style.display = 'none';
+      notesArea.style.display = 'flex';
+      recorderCard.style.display = 'flex';
+      starGuide.style.display = mode === 'lp' ? 'grid' : 'none';
+      document.getElementById('input-label').innerText = mode === 'lp' ? "Your STAR Response for Evaluation:" : "Practice Delivering Your Question or Closing Pitch:";
+    }
+
+    canAdvance = true;
+    nextBtn.disabled = false;
+    document.getElementById('score-panel').className = 'score-panel';
+    lastPromptIndex = -1;
+    nextPrompt();
+  }
+
+  function setPeccyState(state) {
+    avatar.className = "peccy-avatar-container " + state;
+    if (state === 'speaking') mouth.setAttribute('d', 'M 45,75 Q 65,95 85,75');
+    else if (state === 'thinking') mouth.setAttribute('d', 'M 50,80 Q 65,75 80,80');
+    else if (state === 'happy') mouth.setAttribute('d', 'M 40,70 Q 65,100 90,70');
+    else if (state === 'sad') mouth.setAttribute('d', 'M 45,85 Q 65,70 85,85');
+    else mouth.setAttribute('d', 'M 45,75 Q 65,90 85,75');
+  }
+
+  function getRandomNonRepeatingIndex(arrayLength) {
+    if (arrayLength <= 1) return 0;
+    let nextIdx;
+    do {
+      nextIdx = Math.floor(Math.random() * arrayLength);
+    } while (nextIdx === lastPromptIndex);
+    lastPromptIndex = nextIdx;
+    return nextIdx;
+  }
+
+  function nextPrompt() {
+    if (!canAdvance) {
+      alert("Please revise your response and achieve a GREEN FLAG before moving to the next prompt!");
+      return;
+    }
+
+    setPeccyState('thinking');
+    dialogue.innerText = "Loading prompt...";
+    document.getElementById('score-panel').className = 'score-panel';
+
+    setTimeout(() => {
+      if (currentMode === 'lp') {
+        const idx = getRandomNonRepeatingIndex(lpQuestions.length);
+        const randomQ = lpQuestions[idx];
+        lpTag.innerText = randomQ.lp;
+        dialogue.innerText = `"${randomQ.text}"`;
+      } else if (currentMode === 'mc') {
+        const selectedGroup = document.getElementById('mc-topic-select').value;
+        let pool = mcQuestions;
+        if (selectedGroup !== 'all') {
+          pool = mcQuestions.filter(q => q.group === selectedGroup);
+        }
+
+        const idx = getRandomNonRepeatingIndex(pool.length);
+        currentMC = pool[idx];
+        lpTag.innerText = currentMC.category;
+        dialogue.innerText = currentMC.text;
+        renderMCOptions(currentMC);
+      } else if (currentMode === 'l4') {
+        const selectedGroup = document.getElementById('l4-topic-select').value;
+        let pool = l4Questions;
+        if (selectedGroup !== 'all') {
+          pool = l4Questions.filter(q => q.group === selectedGroup);
+        }
+
+        const idx = getRandomNonRepeatingIndex(pool.length);
+        const q = pool[idx];
+        lpTag.innerText = q.category;
+        dialogue.innerText = `"${q.text}"\n\n💡 Guidance: ${q.guidance}`;
+      } else {
+        const idx = getRandomNonRepeatingIndex(reverseQuestions.length);
+        const randomQ = reverseQuestions[idx];
+        lpTag.innerText = randomQ.lp;
+        dialogue.innerText = `"${randomQ.text}"`;
+      }
+
+      setPeccyState('speaking');
+      nextBtn.innerText = "Next Prompt";
+      resetNotes(false);
+      resetTimer();
+    }, 300);
+  }
+
+  function renderMCOptions(mcData) {
+    const mcArea = document.getElementById('mc-area');
+    mcArea.innerHTML = '';
+
+    const shuffledOptions = [...mcData.options];
+    for (let i = shuffledOptions.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
+    }
+
+    const prefixes = ['A', 'B', 'C', 'D'];
+
+    shuffledOptions.forEach((optText, idx) => {
+      const btn = document.createElement('button');
+      btn.className = 'mc-option-btn';
+      btn.innerText = `${prefixes[idx]}) ${optText}`;
+      
+      const isCorrect = optText === mcData.correctText;
+      btn.onclick = () => selectMCOption(isCorrect, mcData.explanation, btn);
+      mcArea.appendChild(btn);
+    });
+  }
+
+  function selectMCOption(isCorrect, explanation, clickedBtn) {
+    const allBtns = document.querySelectorAll('.mc-option-btn');
+    allBtns.forEach(b => b.disabled = true);
+
+    const panel = document.getElementById('score-panel');
+    const header = document.getElementById('score-header');
+    const body = document.getElementById('score-body');
+
+    if (isCorrect) {
+      clickedBtn.classList.add('correct');
+      setPeccyState('happy');
+      panel.className = 'score-panel green';
+      header.innerHTML = '🟢 GREEN FLAG: Correct Answer!';
+      body.innerHTML = `<strong>Explanation:</strong> ${explanation}`;
+      canAdvance = true;
+    } else {
+      clickedBtn.classList.add('incorrect');
+      allBtns.forEach(b => {
+        if (b.innerText.includes(currentMC.correctText)) {
+          b.classList.add('correct');
+        }
+      });
+      setPeccyState('sad');
+      panel.className = 'score-panel red';
+      header.innerHTML = '🚩 RED FLAG: Incorrect Answer';
+      body.innerHTML = `<strong>Explanation:</strong> ${explanation}`;
+      canAdvance = true; 
+    }
+  }
+
+  function toggleTimer() {
+    const btn = document.getElementById('timer-btn');
+    if (isTimerRunning) {
+      clearInterval(timerInterval);
+      isTimerRunning = false;
+      btn.innerText = "Resume Timer";
+    } else {
+      isTimerRunning = true;
+      btn.innerText = "Pause Timer";
+      timerInterval = setInterval(() => {
+        seconds++;
+        const mins = String(Math.floor(seconds / 60)).padStart(2, '0');
+        const secs = String(seconds % 60).padStart(2, '0');
+        document.getElementById('timer').innerText = `${mins}:${secs}`;
+      }, 1000);
+    }
+  }
+
+  function resetTimer() {
+    clearInterval(timerInterval);
+    isTimerRunning = false;
+    seconds = 0;
+    document.getElementById('timer').innerText = "00:00";
+    document.getElementById('timer-btn').innerText = "Start Timer";
+  }
+
+  // Real-time STAR Method Color Tracker
+  function checkStarRealtime() {
+    const text = document.getElementById('user-notes').value.trim().toLowerCase();
+
+    const hasSituation = /when|situation|project|issue|problem|challenge|facility|datacenter|outpost|server|rack/.test(text);
+    const hasTask = /task|assigned|responsible|my role|goal|objective|needed to/.test(text);
+    const hasAction = /\bi\b|my |created|built|led|decided|analyzed|configured|troubleshot|repaired|resolved|managed|implemented|audited|swapped|tested/.test(text);
+    const hasResult = /\d+|%|percent|dollars|reduced|increased|improved|saved|hours|items|zero|sla|latency|uptime/.test(text);
+
+    updateBadgeState('s', hasSituation);
+    updateBadgeState('t', hasTask);
+    updateBadgeState('a', hasAction);
+    updateBadgeState('r', hasResult);
+  }
+
+  function updateBadgeState(letter, isPassed) {
+    const badge = document.getElementById(`badge-${letter}`);
+    if (isPassed) {
+      badge.classList.add('pass');
+    } else {
+      badge.classList.remove('pass');
+    }
+  }
+
+  function evaluateAnswer() {
+    const text = document.getElementById('user-notes').value.trim();
+    const panel = document.getElementById('score-panel');
+    const header = document.getElementById('score-header');
+    const body = document.getElementById('score-body');
+
+    if (text.length < 30) {
+      setPeccyState('sad');
+      panel.className = 'score-panel red';
+      header.innerHTML = '🚩 RED FLAG: Answer Too Short';
+      body.innerHTML = 'Your response is too brief for an interview. Provide full details covering Situation, Task, Action, and Result.';
+      canAdvance = false;
+      return;
+    }
+
+    const lower = text.toLowerCase();
+    const hasSituation = /when|situation|project|issue|problem|challenge|facility|datacenter|outpost|server|rack/.test(lower);
+    const hasTask = /task|assigned|responsible|my role|goal|objective|needed to/.test(lower);
+    const hasPersonalAction = /\bi\b|my |created|built|led|decided|analyzed|configured|troubleshot|repaired|resolved|managed|implemented|audited|swapped|tested/.test(lower);
+    const hasQuantitativeResult = /\d+|%|percent|dollars|reduced|increased|improved|saved|hours|items|zero|sla|latency|uptime/.test(lower);
+    const usesTooMuchWe = (lower.match(/\bwe\b/g) || []).length > 3 && (lower.match(/\bi\b/g) || []).length < 2;
+
+    let missing = [];
+    if (!hasSituation) missing.push("<strong>Situation:</strong> Clearly explain the initial context or operational challenge.");
+    if (!hasTask) missing.push("<strong>Task:</strong> Explain your explicit responsibility in the situation.");
+    if (!hasPersonalAction) missing.push("<strong>Personal Action:</strong> Detail what YOU personally did (use active first-person verbs like 'I audited', 'I repaired', 'I organized').");
+    if (usesTooMuchWe) missing.push("<strong>Overuse of 'We':</strong> Shift focus from 'we' to 'I' so interviewers know your personal contributions.");
+    if (!hasQuantitativeResult) missing.push("<strong>Quantitative Results:</strong> Include numbers, percentages, time saved, or measurable operational metrics.");
+
+    if (missing.length === 0) {
+      setPeccyState('happy');
+      panel.className = 'score-panel green';
+      header.innerHTML = '🟢 GREEN FLAG: Excellent STAR Story!';
+      body.innerHTML = 'Your response meets Amazon interview standards! You clearly outlined context, highlighted your personal actions, and included measurable results. You may now move to the next question.';
+      canAdvance = true;
+      nextBtn.disabled = false;
+      dialogue.innerText = "Awesome job! You passed this prompt with a Green Flag.";
+    } else {
+      setPeccyState('sad');
+      panel.className = 'score-panel red';
+      header.innerHTML = '🚩 RED FLAG: Revision Needed Before Moving On';
+      
+      let html = '<p>Your response does not yet meet Amazon green flag standards. Fix the following areas and click "Score My Answer" again:</p><ul>';
+      missing.forEach(item => { html += `<li>${item}</li>`; });
+      html += '</ul>';
+      body.innerHTML = html;
+
+      canAdvance = false;
+      dialogue.innerText = "Let's refine this answer! Review the red flags below, update your notes, and re-submit.";
+    }
+  }
+
+  function resetNotes(clearInput = true) {
+    if (clearInput) {
+      document.getElementById('user-notes').value = "";
+    }
+    document.getElementById('audio-playback').style.display = 'none';
+    document.getElementById('score-panel').className = 'score-panel';
+    document.getElementById('record-status-text').innerText = "Microphone Ready";
+    checkStarRealtime();
+    canAdvance = true;
+  }
+
+  // Initialize Did You Know Feed & Start
+  window.onload = () => {
+    startFactFeed();
+    checkStarRealtime();
+  };
+</script>
+</body>
+</html>
